@@ -46,9 +46,12 @@ class Square {
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
     // Set color with red, green, blue and alpha (opacity) values
-    float color[] = { 0.2f, 0.709803922f, 0.898039216f, 1.0f };
+    final float originalColor[] = { 0.2f, 0.709803922f, 0.898039216f, 1.0f };
+    float color[];
 
     public Square() {
+    	color = originalColor;
+    	
         // initialize vertex byte buffer for shape coordinates
         ByteBuffer bb = ByteBuffer.allocateDirect(
         // (# of coordinate values * 4 bytes per float)
@@ -79,6 +82,12 @@ class Square {
         GLES20.glLinkProgram(mProgram);                  // create OpenGL program executables
     }
 
+    //Color hack method
+    public void draw(float[] mvpMatrix, float[] color) {
+    	this.color = color;
+    	draw(mvpMatrix);
+    	this.color = originalColor;
+    }
     public void draw(float[] mvpMatrix) {
         // Add program to OpenGL environment
         GLES20.glUseProgram(mProgram);
