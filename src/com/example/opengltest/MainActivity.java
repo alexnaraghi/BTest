@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
             }
             }
             
-            if(fingerOneDown && fingerTwoDown)
+            if(fingerOneDown || fingerTwoDown)
             {
             	mRenderer.isActive = true;
             	CalulateOpenState();
@@ -236,7 +236,7 @@ public class MainActivity extends Activity {
 	    	//take the average
 	    	openState = (Math.min(1.0f,leftRatio) + Math.min(1.0f,rightRatio)) / 2;
 	    	mRenderer.mOpenState = openState;
-	    	
+	    	mRenderer.mOpenState = 0.6f;
 	    	//avoid log spam
 	    	c++;
 	    	if(c%5 == 0)

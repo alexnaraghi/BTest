@@ -8,7 +8,7 @@ import android.opengl.Matrix;
 public class Book 
 {
 	//x,y,z of the book.  The initial translation
-	private final float initialBookLocation[] = { 0f,  0f, -0.4f};
+	private final float initialBookLocation[] = { 0f,  0f, 0f};
 	
 	//Single square object, which we transform with a 
 	//matrix every draw call to draw all necessary squares.
@@ -57,10 +57,13 @@ public class Book
 	
 	public void draw(float[] mvpMatrix, float angle)
 	{
+		/*
 		if(mIsActive)
 			mOpenState = angle;
 		else
 			setInactiveState();
+		*/
+		mOpenState = angle;
 		
 		//Hardcoded scalar for z moevement based on open state
 		mZOffset = -0.7f * mOpenState;
@@ -99,8 +102,35 @@ public class Book
 	private void drawPages()
 	{
 		setPageRotations();
-		
+		/*
 		for(int i = 0; i < pages.size(); i ++)
+		{
+			Float rotation = pages.get(i);
+			// Create a rotation for each page and draw
+	        Matrix.setRotateM(mRotationMatrix, 0, rotation, 0, -1.0f, 0);
+	        Matrix.multiplyMM(mResultMatrix, 0, mRotationMatrix, 0, mBookMatrix, 0);
+	        mSquare.draw(mResultMatrix,colors.get(i));
+		}
+		*/
+		
+		//TODO: Restore regular draw code once depth based drawing is coded (this is
+		//a hack for sensible draw order, but isnt necessary if depth draw is done.
+		int centerPage = Math.round((pages.size()-1)/2);
+		
+		for(int i = centerPage; i >= 0; i--)
+		{
+			Float rotation = pages.get(i);
+			// Create a rotation for each page and draw
+	        Matrix.setRotateM(mRotationMatrix, 0, rotation, 0, -1.0f, 0);
+	        Matrix.multiplyMM(mResultMatrix, 0, mRotationMatrix, 0, mBookMatrix, 0);
+	        mSquare.draw(mResultMatrix,colors.get(i));
+		}
+		
+		//Edge case
+		if(centerPage < 2)
+			return;
+		
+		for(int i = pages.size() - 1; i >= centerPage + 1; i--)
 		{
 			Float rotation = pages.get(i);
 			// Create a rotation for each page and draw
@@ -114,11 +144,11 @@ public class Book
 	//Currently, distribute evenly between min and max rotations
 	private void setPageRotations()
 	{
-		int centerPage = (int)(pages.size()/2);
+		int centerPage = Math.round((pages.size()-1)/2);
 		
 		for(int i = 0; i <= centerPage; i++)
 		{
-			pages.set(i, relToDegreeLeft(mOpenState * absRatioToPageRatio(((float)i)/centerPage)));
+			pages.set(i, relToPageDegreeLeft(mOpenState * absRatioToPageRatio(((float)i)/centerPage)));
 		}
 		
 		//Edge case
@@ -127,13 +157,20 @@ public class Book
 		
 		for(int i = centerPage + 1; i < pages.size(); i++)
 		{
-			pages.set(i, relToDegreeRight(mOpenState * absRatioToPageRatio(((float)i - (centerPage + 1))/(pages.size() - centerPage))));
+			pages.set(i, relToPageDegreeRight(mOpenState * absRatioToPageRatio(((float)i - (centerPage + 1))/(pages.size() - centerPage))));
 		}
 	}
 	
 	private float absRatioToPageRatio(float input)
 	{
-		return input;
+		final float startLeftRatio = 0.15f;
+		final float startRightRatio = 0.85f;
+		float maxRatio = 0.3f + mOpenState * 0.2f;
+		
+		float leftRatio = startLeftRatio + maxRatio * mOpenState;
+		float rightRatio = startRightRatio - maxRatio * mOpenState;
+		
+		return leftRatio + rightRatio * input;
 		//return 1 - input * (0.1f + 0.9f * (1f - mOpenState));
 	}
 	
@@ -144,7 +181,7 @@ public class Book
 		if (mOpenState > 0.75)
 			mOpenState = 1.0f;
 		else
-			mOpenState = 0-.0f;
+			mOpenState = 0.0f;
 	}
 
 	public void setIsActive(boolean isActive) {
@@ -156,7 +193,7 @@ public class Book
 	{
 		if(relative < 0f || relative > 1f)
 			throw new RuntimeException("left is getting incorrect input " + relative);
-		return - minRotation + (minRotation - maxRotation) * relative;
+		return - minRotation +  (minRotation - maxRotation) * relative;
 	}
 	
 	//Converts a float between 0 and 1 into an absolute rotation in degrees (right side)
@@ -166,4 +203,19 @@ public class Book
 			throw new RuntimeException("right is getting incorrect input " + relative);
 		return -180 + (minRotation - (minRotation - maxRotation) * relative);
 	}
+	
+		private float relToPageDegreeLeft(float relative)
+		{
+			if(relative < 0f || relative > 1f)
+				throw new RuntimeException("left is getting incorrect input " + relative);
+			return - 89f +  (89f - maxRotation) * relative;
+		}
+		
+		//Converts a float between 0 and 1 into an absolute rotation in degrees (right side)
+		private float relToPageDegreeRight(float relative)
+		{
+			if(relative < 0f || relative > 1f)
+				throw new RuntimeException("right is getting incorrect input " + relative);
+			return -180 + (91f - (89f - maxRotation) * relative);
+		}
 }
